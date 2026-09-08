@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="script.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebMCP Config Generator</title>
+<style>
+  :root{
+    --bg: #16171a;
+    --panel: #1c1e22;
+    --panel-raised: #232529;
+    --border: #2e3137;
+    --text: #d9dce1;
+    --text-dim: #868b94;
+    --text-faint: #565b64;
+    --accent: #e3b341;
+    --accent-dim: #6b5a2a;
+    --ok: #7ee787;
+    --skip: #565b64;
+    --mono: "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, "Inter", "Segoe UI", sans-serif;
+  }
+  *{ box-sizing: border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .app{
+    display:flex;
+    flex-direction:column;
+    height:100vh;
+  }
+  header{
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display:flex;
+    align-items:baseline;
+    gap: 14px;
+    flex-shrink:0;
+  }
+  header h1{
+    font-size: 15px;
+    font-weight: 600;
+    margin:0;
+    letter-spacing: 0.01em;
+  }
+  header .sub{
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .layout{
+    flex:1;
+    display:flex;
+    min-height:0;
+  }
+  .col-left{
+    width: 46%;
+    border-right: 1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    min-width: 380px;
+  }
+  .col-right{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-width: 0;
+  }
+  .col-header{
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    text-transform: none;
+    color: var(--text-dim);
+    display:flex;
+    justify-content: space-between;
+    align-items:center;
+    flex-shrink:0;
+  }
+  .col-body{
+    flex:1;
+    overflow-y:auto;
+    padding: 20px;
+  }
+
+  /* Dropzone */
+  .dropzone{
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    padding: 36px 20px;
+    text-align:center;
+    color: var(--text-dim);
+    cursor:pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .dropzone:hover, .dropzone.drag{
+    border-color: var(--accent);
+    background: rgba(227,179,65,0.04);
+  }
+  .dropzone strong{ color: var(--text); font-weight: 500; }
+  .dropzone input{ display:none; }
+  .dropzone .hint{ font-size:12px; color: var(--text-faint); margin-top:6px; }
+
+  .file-loaded{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 10px 14px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    margin-bottom: 18px;
+  }
+  .file-loaded button{
+    background:none;
+    border:none;
+    color: var(--text-dim);
+    cursor:pointer;
+    font-family: var(--sans);
+    font-size: 12px;
+    text-decoration: underline;
+  }
+  .file-loaded button:hover{ color: var(--text); }
+
+  /* Form cards */
+  .form-card{
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 14px;
+    background: var(--panel);
+    overflow: hidden;
+  }
+  .form-card-head{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--panel-raised);
+    cursor:pointer;
+    user-select:none;
+  }
+  .form-card-head .id-badge{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--bg);
+    background: var(--text-dim);
+    padding: 1px 6px;
+    border-radius: 3px;
+    flex-shrink:0;
+  }
+  .form-card-head .title{
+    flex:1;
+    font-size: 13px;
+    color: var(--text);
+    white-space: nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .form-card-head .chev{
+    color: var(--text-faint);
+    font-size: 11px;
+    transition: transform .15s ease;
+  }
+  .form-card.collapsed .chev{ transform: rotate(-90deg); }
+  .form-card.collapsed .form-card-body{ display:none; }
+  .form-card-head input[type=checkbox]{ accent-color: var(--accent); }
+
+  .form-card-body{ padding: 14px; }
+  .field-row{
+    display:grid;
+    grid-template-columns: 20px 90px 1fr;
+    gap: 10px;
+    align-items:center;
+    margin-bottom: 6px;
+    font-size: 12.5px;
+  }
+  .field-row.skipped{ opacity: 0.4; }
+  .field-row .key{
+    font-family: var(--mono);
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .field-row input[type=checkbox]{ accent-color: var(--accent); }
+  .field-row input[type=text]{
+    width:100%;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 5px 8px;
+    font-family: var(--sans);
+    font-size: 12.5px;
+  }
+  .field-row input[type=text]:focus{ outline: none; border-color: var(--accent); }
+
+  label.meta-label{
+    display:block;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin: 10px 0 4px;
+  }
+  input.meta-input, textarea.meta-input{
+    width:100%;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    padding: 7px 9px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  textarea.meta-input{ resize: vertical; min-height: 44px; }
+  input.meta-input:focus, textarea.meta-input:focus{ outline:none; border-color: var(--accent); }
+
+  .empty-state{
+    color: var(--text-faint);
+    font-size: 13px;
+    padding: 40px 10px;
+    text-align:center;
+  }
+
+  /* Output pane */
+  pre#output{
+    margin:0;
+    padding: 20px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    white-space: pre;
+    overflow: auto;
+    height: 100%;
+    color: var(--text);
+  }
+  .tok-comment{ color: var(--text-faint); }
+  .tok-key{ color: var(--ok); }
+  .tok-string{ color: var(--accent); }
+  .tok-punct{ color: var(--text-dim); }
+
+  .toolbar-actions{ display:flex; gap: 8px; }
+  .btn{
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 5px;
+    cursor:pointer;
+  }
+  .btn:hover{ border-color: var(--text-dim); }
+  .btn.primary{
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #1c1600;
+    font-weight: 600;
+  }
+  .btn.primary:hover{ background: #edc665; }
+  .btn:disabled{ opacity: 0.4; cursor: not-allowed; }
+  .btn.copied{ color: var(--ok); border-color: var(--ok); background:none; }
+
+  .todo-count{
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>WebMCP Config Generator</h1>
+    <span class="sub">GravityForms export → webmcp-gravityforms-config.php</span>
+  </header>
+
+  <div class="layout">
+    <div class="col-left">
+      <div class="col-header"><span>Source &amp; forms</span></div>
+      <div class="col-body" id="leftBody">
+        <div class="dropzone" id="dropzone">
+          <div><strong>Drop a GravityForms export</strong> or click to choose a file</div>
+          <div class="hint">Forms → Import/Export → Export Forms → .json</div>
+          <input type="file" id="fileInput" accept=".json,application/json">
+        </div>
+        <div id="formsList"></div>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <div class="col-header">
+        <span id="outputSummary">Generated config</span>
+        <div class="toolbar-actions">
+          <span class="todo-count" id="todoCount"></span>
+          <button class="btn" id="copyBtn" disabled>Copy</button>
+          <button class="btn primary" id="downloadBtn" disabled>Download .php</button>
+        </div>
+      </div>
+      <pre id="output"><span class="tok-comment">// Upload a GravityForms JSON export on the left to generate a config file here.</span></pre>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
