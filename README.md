@@ -1,5 +1,5 @@
 # WebMCP -GForms Config Generator
-
+https://yonisantiago.github.io/WebMCP---Gravity-Config-File-Generator/webmcp-config-generator.html
 Turns a GravityForms export into a `webmcp-gravityforms-config.php` file, in the
 format expected by the WebMCP GravityForms integration.
 
